@@ -3,7 +3,6 @@ from sqlalchemy import text
 import os
 import pandas as pd
 from dotenv import load_dotenv
-from uuid import UUID
 
 load_dotenv()
 
@@ -23,7 +22,7 @@ async def create_campaign(
     name: str,
     type: str,
     description: str,
-) -> str:
+) -> int:
     """Create a marketing campaign.
     
     Args:
@@ -46,11 +45,11 @@ async def create_campaign(
             {"name": name, "type": type, "description": description},
         )
         session.commit()
-        return str(result.fetchone()[0])
+        return result.fetchone()[0]
 
 @mcp.tool()
 async def send_campaign_email(
-    campaign_id: UUID,
+    campaign_id: int | str,
     customer_id: int,
     subject: str,
     body: str,
@@ -58,7 +57,7 @@ async def send_campaign_email(
     """Send a campaign email.
     
     Args:
-        campaign_id: The ID of the campaign.
+        campaign_id: The ID of the campaign (integer or string representation).
         customer_id: The ID of the customer.
         subject: The subject of the email.
         body: The body of the email.
@@ -66,16 +65,21 @@ async def send_campaign_email(
     Returns:
         A confirmation that the email was sent.
     """
+    
+    try:
+        campaign_id_int = int(campaign_id)
+    except (ValueError, TypeError):
+        raise ValueError(f"Invalid campaign_id: {campaign_id}. Must be an integer or string representation of an integer.")
    
     with SessionLocal() as session:
         result = session.execute(
             text(
                 """
-                INSERT INTO campaign_emails (campaign_id, customer_id, subject, body)
+                INSERT INTO campaign_emails (campaign_id, customer_id, email_subject, email_body)
                 VALUES (:campaign_id, :customer_id, :subject, :body)
                 """
             ),
-            {"campaign_id": campaign_id, "customer_id": customer_id, "subject": subject, "body": body},
+            {"campaign_id": campaign_id_int, "customer_id": customer_id, "subject": subject, "body": body},
         )
         session.commit()
 

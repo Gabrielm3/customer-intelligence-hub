@@ -78,14 +78,18 @@ graph TB
    docker-compose up --build -d
    ```
 
-4. **Import sample data**
+4. **Generate and import sample data**
    ```bash
-   docker-compose exec customer-intelligence-hub bash -c "cd database && uv run python generate_data_tables.py"
+   # Generate CSV files from raw data (run once)
+   docker-compose exec crm-agent bash -c "cd database && uv run python generate_data_tables.py"
+   
+   # Import CSV files to database
+   docker-compose exec crm-agent bash -c "cd database && uv run python import_data.py"
    ```
 
 5. **Start the interactive CLI**
    ```bash
-   docker-compose exec customer-intelligence-hub uv run python cli/interactive_cli.py
+   docker-compose exec crm-agent uv run python cli/interactive_cli.py
    ```
 
 ### Running Locally
@@ -114,7 +118,10 @@ graph TB
 4. **Initialize database**
    ```bash
    cd database
+   # Generate CSV files from raw data
    uv run python generate_data_tables.py
+   # Import to database
+   uv run python import_data.py
    ```
 
 5. **Run the CLI**
@@ -185,15 +192,16 @@ docker-compose up --build
 
 **Empty Database**
 ```bash
-# Re-generate sample data
-docker-compose exec customer-intelligence-hub bash -c "cd database && uv run python generate_data_tables.py"
+# Re-generate and import sample data
+docker-compose exec crm-agent bash -c "cd database && uv run python generate_data_tables.py"
+docker-compose exec crm-agent bash -c "cd database && uv run python import_data.py"
 ```
 
 ### Monitoring
 
 - **LangSmith Dashboard**: https://smith.langchain.com/ (project: `customer-intelligence-hub`)
 - **Database Status**: `docker-compose exec postgres psql -U crm_user -d crm_database -c "\dt"`
-- **Container Logs**: `docker-compose logs customer-intelligence-hub`
+- **Container Logs**: `docker-compose logs crm-agent`
 
 ## Contributing
 

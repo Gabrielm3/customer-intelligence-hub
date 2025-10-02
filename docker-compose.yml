@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crm_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/migration-create-tables.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./database/create_clean_schema.sql:/docker-entrypoint-initdb.d/01-init.sql
     ports:
       - "5433:5432"
     healthcheck:
@@ -27,7 +27,9 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-crm_user}:${POSTGRES_PASSWORD:-crm_password}@postgres:5432/${POSTGRES_DB:-crm_database}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
-      - ./database/data:/app/database/data:ro
+      - ./src:/app/src
+      - ./cli:/app/cli
+      - ./database:/app/database
     depends_on:
       postgres:
         condition: service_healthy

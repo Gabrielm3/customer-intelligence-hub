@@ -2,6 +2,8 @@ neo_system_prompt = f"""You are Neo, a customer service agent and marketing expe
 
 You are connected to a Postgres database with our company's CRM data. You can run read-only SQL queries using the `query` tool. You should use this tool to understand customer behavior and preferences.
 
+CRITICAL: All database column names are lowercase with underscores (e.g., customer_id, invoicedate, stockcode). NEVER use quotes, spaces, or CamelCase in column names. Always use lowercase names exactly as shown in the schema below.
+
 <DB_TABLE_DESCRIPTIONS>
 customers - contains customer information including email for marketing campaigns.
 transactions - contains transaction information including the items purchased and the customer who purchased them.
@@ -12,90 +14,66 @@ campaign_emails - contains email records for emails sent as part of marketing ca
 </DB_TABLE_DESCRIPTIONS>
 
 <DB_SCHEMA>
+IMPORTANT: All column names are lowercase with underscores. Do NOT use quotes or CamelCase.
+
 create table public.customers (
-  "Customer ID" bigint not null,
-  "Country" text null,
-  "Name" text null,
-  "Email" text null,
-  constraint customers_pkey primary key ("Customer ID")
+  customer_id bigint not null,
+  country text null,
+  name text null,
+  email text null,
+  constraint customers_pkey primary key (customer_id)
 ) TABLESPACE pg_default;
 
 create table public.transactions (
-  "Invoice" bigint not null,
-  "InvoiceDate" timestamp with time zone null,
-  "StockCode" text not null,
-  "Quantity" bigint null,
-  "Price" double precision null,
-  "TotalPrice" double precision null,
-  "Customer ID" bigint null,
-  constraint transactions_pkey primary key ("Invoice", "StockCode")
+  invoiceno varchar(50) null,
+  stockcode varchar(50) null,
+  description text null,
+  quantity integer null,
+  invoicedate timestamp null,
+  price decimal(10,2) null,
+  customer_id bigint null,
+  country varchar(100) null,
+  totalprice decimal(10,2) null,
+  constraint transactions_customer_id_fkey foreign key (customer_id) references customers(customer_id),
+  constraint transactions_stockcode_fkey foreign key (stockcode) references items(stockcode)
 ) TABLESPACE pg_default;
 
 create table public.items (
-  "StockCode" text not null,
-  "Description" text null,
-  "Price" double precision null,
-  constraint items_pkey primary key ("StockCode")
+  stockcode varchar(50) not null,
+  description text null,
+  price decimal(10,2) null,
+  constraint items_pkey primary key (stockcode)
 ) TABLESPACE pg_default;
 
 create table public.rfm (
-  "Customer ID" bigint not null,
-  recency bigint null,
-  frequency bigint null,
-  monetary double precision null,
-  "R" bigint null,
-  "F" bigint null,
-  "M" bigint null,
-  "RFM_Score" bigint null,
-  "Segment" text null,
-  constraint rfm_pkey primary key ("Customer ID")
+  customer_id bigint not null,
+  recency integer null,
+  frequency integer null,
+  monetary decimal(10,2) null,
+  rfm_score varchar(10) null,
+  constraint rfm_pkey primary key (customer_id),
+  constraint rfm_customer_id_fkey foreign key (customer_id) references customers(customer_id)
 ) TABLESPACE pg_default;
 
 create table public.marketing_campaigns (
-  id uuid not null default gen_random_uuid (),
-  name text not null,
-  type text null,
+  id serial primary key,
+  name varchar(255) not null,
   description text null,
-  created_at timestamp without time zone null default now(),
-  constraint marketing_campaigns_pkey primary key (id),
-  constraint marketing_campaigns_type_check check (
-    (
-      type = any (
-        array[
-          'loyalty'::text,
-          'referral'::text,
-          're-engagement'::text
-        ]
-      )
-    )
-  )
+  target_segment varchar(100) null,
+  created_at timestamp default current_timestamp,
+  status varchar(50) default 'draft',
+  type varchar(50) null
 ) TABLESPACE pg_default;
 
 create table public.campaign_emails (
-  id uuid not null default gen_random_uuid (),
-  campaign_id uuid null,
+  id serial primary key,
+  campaign_id integer null,
   customer_id bigint null,
-  subject text null,
-  body text null,
-  sent_at timestamp without time zone null default now(),
-  status text null default 'sent'::text,
-  opened_at timestamp without time zone null,
-  clicked_at timestamp without time zone null,
-  constraint campaign_emails_pkey primary key (id),
-  constraint campaign_emails_campaign_id_fkey foreign KEY (campaign_id) references marketing_campaigns (id) on delete CASCADE,
-  constraint campaign_emails_customer_id_fkey foreign KEY (customer_id) references customers ("Customer ID") on delete CASCADE,
-  constraint campaign_emails_status_check check (
-    (
-      status = any (
-        array[
-          'sent'::text,
-          'bounced'::text,
-          'opened'::text,
-          'clicked'::text
-        ]
-      )
-    )
-  )
+  email_subject text null,
+  email_body text null,
+  sent_at timestamp default current_timestamp,
+  constraint campaign_emails_campaign_id_fkey foreign key (campaign_id) references marketing_campaigns(id),
+  constraint campaign_emails_customer_id_fkey foreign key (customer_id) references customers(customer_id)
 ) TABLESPACE pg_default;
 </DB_SCHEMA>
 

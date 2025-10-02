@@ -50,7 +50,8 @@ async def main():
         config = {
             "configurable": {
                 "thread_id": "1"
-            }
+            },
+            "recursion_limit": 50  # Increase recursion limit to handle complex queries
         }
         yolo_mode = False
 
